@@ -1,12 +1,20 @@
 module Main exposing (main)
 
+import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onClick)
 
-main : Html String
-main = view initialModel
+type Msg = ClickedChampionImage Champion
 
-view : Model -> Html String
+main : Program () Model Msg
+main = Browser.sandbox
+    { init = initialModel
+    , view = view
+    , update = update
+    }
+
+view : Model -> Html Msg
 view model =
     div [ id "main" ]
         [ h2 [] [ text "Champions"]
@@ -15,15 +23,18 @@ view model =
         , div [] [ championImg model.selectedChampion, championDetailsView model.selectedChampion ]
         ]
 
-championsImgs : List Champion -> List (Html String)
+championsImgs : List Champion -> List (Html Msg)
 championsImgs champions =
     List.map championImg champions
 
-championImg : Champion -> Html String
+championImg : Champion -> Html Msg
 championImg champion =
-    img [ src <| "https://cdn.leagueofgraphs.com/img/tft/champions/" ++ champion.imageUrl ] []
+    img [ src <| "https://cdn.leagueofgraphs.com/img/tft/champions/" ++ champion.imageUrl
+        , onClick <| ClickedChampionImage champion
+        ]
+        []
 
-championDetailsView : Champion -> Html String
+championDetailsView : Champion -> Html Msg
 championDetailsView champion =
     div []
         [ p [] [ text champion.name ]
@@ -45,3 +56,9 @@ lucian : Champion
 lucian = { imageUrl = "236.png", name = "Lucian", health = 550 }
 zyra : Champion
 zyra = { imageUrl = "143.png", name = "Zyra", health = 500 }
+
+update : Msg -> Model -> Model
+update message model =
+    case message of
+        ClickedChampionImage champion ->
+            { model | selectedChampion = champion }
