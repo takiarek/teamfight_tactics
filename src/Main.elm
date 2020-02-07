@@ -11,6 +11,7 @@ import Json.Decode.Pipeline exposing (optional, required)
 type Msg
     = ClickedChampionImage Champion
     | GotChampions (Result Http.Error (List Champion))
+    | ChosenChampionLevel Level
 
 main : Program () Model Msg
 main = Browser.element
@@ -21,9 +22,9 @@ main = Browser.element
     }
 
 initialModel : Model
-initialModel = { champions = Loading }
+initialModel = { champions = Loading, selectedChampionLevel = One }
 
-type alias Model = { champions : Champions }
+type alias Model = { champions : Champions, selectedChampionLevel : Level }
 type Champions
     = Loading
     | Errored String
@@ -61,7 +62,11 @@ view model =
                 Loaded champions selectedChampion ->
                     [ div [] <| championsImgs champions
                     , h3 [] [ text "Details" ]
-                    , div [] [ championImg selectedChampion, championDetailsView selectedChampion ]
+                    , div []
+                          [ levelChooserView model.selectedChampionLevel
+                          , championImg selectedChampion
+                          , championDetailsView model.selectedChampionLevel selectedChampion
+                          ]
                     ]
                 Loading -> []
                 Errored errorMessage ->
@@ -79,12 +84,48 @@ championImg champion =
         ]
         []
 
-championDetailsView : Champion -> Html Msg
-championDetailsView champion =
+levelChooserView : Level -> Html Msg
+levelChooserView selectedLevel =
+    div [] <| List.map (levelRadioButton selectedLevel) [One, Two, Three]
+
+
+levelRadioButton : Level -> Level -> Html Msg
+levelRadioButton selectedLevel level =
+    label []
+          [ input [ type_ "radio"
+                  , name "champion-level"
+                  , onClick <| ChosenChampionLevel level
+                  , checked <| level == selectedLevel
+                  ] []
+          , text <| levelToString level
+          ]
+
+levelToString : Level -> String
+levelToString level =
+    case level of
+        One -> "one"
+        Two -> "two"
+        Three -> "three"
+
+type Level
+    = One
+    | Two
+    | Three
+
+championDetailsView : Level -> Champion -> Html Msg
+championDetailsView level champion =
     div []
         [ p [] [ text champion.name ]
-        , p [] [ text "Health: ", text <| String.fromInt champion.levelOne.health ]
+        , p [] [ text "Health: ", text <| championLevelView level champion ]
         ]
+
+championLevelView : Level -> Champion -> String
+championLevelView level champion =
+    String.fromInt
+    <| case level of
+        One -> champion.levelOne.health
+        Two -> champion.levelTwo.health
+        Three -> champion.levelThree.health
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update message model =
@@ -99,6 +140,8 @@ update message model =
                     ({ model | champions = Errored "Empty list!" }, Cmd.none)
         GotChampions (Err _) ->
             ({ model | champions = Errored "Server error!" }, Cmd.none)
+        ChosenChampionLevel level ->
+            ({ model | selectedChampionLevel = level }, Cmd.none)
 
 selectChampion : Champion -> Champions -> Champions
 selectChampion champion champions =
