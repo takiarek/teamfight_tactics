@@ -28,7 +28,8 @@ type Champions
     = Loading
     | Errored String
     | Loaded (List Champion) Champion
-type alias Champion = { imageUrl : String, name : String, health : Int }
+type alias Champion = { imageUrl : String, name : String, levelOne : ChampionLevel, levelTwo : ChampionLevel, levelThree : ChampionLevel }
+type alias ChampionLevel = { health : Int }
 
 initialCommand : Cmd Msg
 initialCommand =
@@ -40,8 +41,15 @@ initialCommand =
 championDecoder : Decoder Champion
 championDecoder =
     succeed Champion
-    |> required "imageUrl" string
+    |> required "image_url" string
     |> required "name" string
+    |> required "level_one" championLevelDecoder
+    |> required "level_two" championLevelDecoder
+    |> required "level_three" championLevelDecoder
+
+championLevelDecoder : Decoder ChampionLevel
+championLevelDecoder =
+    succeed ChampionLevel
     |> required "health" int
 
 view : Model -> Html Msg
@@ -75,7 +83,7 @@ championDetailsView : Champion -> Html Msg
 championDetailsView champion =
     div []
         [ p [] [ text champion.name ]
-        , p [] [ text "Health: ", text <| String.fromInt champion.health ]
+        , p [] [ text "Health: ", text <| String.fromInt champion.levelOne.health ]
         ]
 
 update : Msg -> Model -> (Model, Cmd Msg)
